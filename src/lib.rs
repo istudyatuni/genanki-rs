@@ -183,6 +183,8 @@
 //! the Note, `1` means the second, etc.
 //!
 
+#![allow(clippy::result_large_err, clippy::wrong_self_convention)]
+
 mod apkg_col;
 mod apkg_schema;
 mod builders;
@@ -679,11 +681,11 @@ def check_media(col):
         let present_jpg_path = tmp_dir.path().join("present.jpg");
         std::fs::File::create(present_mp3_path.clone())
             .unwrap()
-            .write(VALID_MP3)
+            .write_all(VALID_MP3)
             .unwrap();
         std::fs::File::create(present_jpg_path.clone())
             .unwrap()
-            .write(VALID_JPG)
+            .write_all(VALID_JPG)
             .unwrap();
         Python::attach(|py| {
             let mut setup = TestSetup::new(&py);
