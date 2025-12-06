@@ -442,6 +442,10 @@ def cleanup(fname, col):
             let code = r#"
 import anki
 import anki.importing.apkg
+
+from anki.lang import set_lang
+set_lang("en_US")
+
 importer = anki.importing.apkg.AnkiPackageImporter(col, outfile)
 importer.run()
 res = col
@@ -475,7 +479,7 @@ def assertion(col):
                 .unwrap()
         }
 
-        fn check_media(&self) -> (Vec<String>, Vec<String>, Vec<String>) {
+        fn check_media(&self) -> (Vec<String>, String, Vec<String>) {
             let code = r#"
 import os
 def check_media(col):
@@ -539,7 +543,7 @@ def check_media(col):
             deck.add_note(Note::new(cn_model(), vec!["d", "e", "f"]).unwrap());
             deck.add_note(Note::new(cn_model(), vec!["g", "h", "i"]).unwrap());
             setup.import_package(Package::new(vec![deck], vec![]).unwrap(), None);
-            assert!(setup.check_col("len([col.getCard(i) for i in col.find_cards('')]) == 6"));
+            assert!(setup.check_col("len([col.get_card(i) for i in col.find_cards('')]) == 6"));
         });
     }
 
@@ -725,7 +729,7 @@ def check_media(col):
             deck.add_note(note);
             setup.import_package(Package::new(vec![deck], vec![]).unwrap(), None);
             assert!(
-                setup.check_col("col.getNote(col.find_notes('')[0]).cards()[0].id > 1577836800000")
+                setup.check_col("col.get_note(col.find_notes('')[0]).cards()[0].id > 1577836800000")
             )
         });
     }
@@ -742,8 +746,8 @@ def check_media(col):
             let col = setup.col();
             let code = r#"
 def latex(col, key):
-    anki_note = col.getNote(col.find_notes('')[0])
-    return anki_note.model()[key]
+    anki_note = col.get_note(col.find_notes('')[0])
+    return anki_note.note_type()[key]
                 "#;
             let assertion = PyModule::from_code(
                 py,
@@ -782,7 +786,7 @@ def latex(col, key):
             deck.add_note(note);
             setup.import_package(Package::new(vec![deck], vec![]).unwrap(), None);
             assert!(setup.check_col(&format!(
-                "col.getNote(col.find_notes('')[0]).model()['sortf'] == {}",
+                "col.get_note(col.find_notes('')[0]).note_type()['sortf'] == {}",
                 CUSTOM_SORT_FIELD_INDEX
             )));
         });
