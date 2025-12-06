@@ -636,11 +636,11 @@ def check_media(col):
         deck.add_note(note);
         std::fs::File::create("present.mp3")
             .unwrap()
-            .write(VALID_MP3)
+            .write_all(VALID_MP3)
             .unwrap();
         std::fs::File::create("present.jpg")
             .unwrap()
-            .write(VALID_JPG)
+            .write_all(VALID_JPG)
             .unwrap();
         Python::attach(|py| {
             let mut setup = TestSetup::new(&py);
