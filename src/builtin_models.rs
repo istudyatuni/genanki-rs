@@ -153,14 +153,16 @@ pub fn basic_optional_reversed_card_model() -> Model {
         vec![
             Field::new("Front").font("Arial"),
             Field::new("Back").font("Arial"),
-            Field::new("Add Reverse").font("Arial"),
+            // ramhorns broke support for sections with spaces in names in
+            // https://github.com/maciejhirsz/ramhorns/pull/59
+            Field::new("Reverse").font("Arial"),
         ],
         vec![
             Template::new("Card 1")
                 .qfmt("{{Front}}")
                 .afmt("{{FrontSide}}\n\n<hr id=answer>\n\n{{Back}}"),
             Template::new("Card 2")
-                .qfmt("{{#Add Reverse}}{{Back}}{{/Add Reverse}}")
+                .qfmt("{{Reverse Back}}")
                 .afmt("{{FrontSide}}\n\n<hr id=answer>\n\n{{Front}}"),
         ],
         Some(
