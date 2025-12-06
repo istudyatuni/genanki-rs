@@ -8,20 +8,19 @@ use rusqlite::{params, Transaction};
 use std::collections::HashSet;
 use std::ops::RangeFrom;
 use std::str::FromStr;
+use std::sync::LazyLock;
 
-use once_cell::sync::Lazy;
+static CLOZE_REGEX: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"{{[^}]*?cloze:(?:[^}]?:)*(.+?)}}").expect("static regex"));
 
-static CLOZE_REGEX: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"{{[^}]*?cloze:(?:[^}]?:)*(.+?)}}").expect("static regex"));
+static CLOZE2_REGEX: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new("<%cloze:(.+?)%>").expect("static regex"));
 
-static CLOZE2_REGEX: Lazy<Regex> =
-    Lazy::new(|| Regex::new("<%cloze:(.+?)%>").expect("static regex"));
+static UPDATES_REGEX: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?s){{c(\d+)::.+?}}").expect("static regex"));
 
-static UPDATES_REGEX: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?s){{c(\d+)::.+?}}").expect("static regex"));
-
-static INVALID_HTML_REGEX: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"<(?!/?[a-z0-9]+(?: .*|/?)>)(?:.|\n)*?>").expect("static regex"));
+static INVALID_HTML_REGEX: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"<(?!/?[a-z0-9]+(?: .*|/?)>)(?:.|\n)*?>").expect("static regex"));
 
 /// Note (Flashcard) to be added to a `Deck`
 #[derive(Clone)]
