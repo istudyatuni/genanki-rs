@@ -5,7 +5,7 @@ use crate::db_entries::Tmpl;
 /// the builder pattern.
 ///
 /// Example:
-/// ```rust
+/// ```
 /// use genanki_rs::Template;
 ///
 /// let template1 = Template::new("Card 1").qfmt("{{Question}}").afmt(r#"{{FrontSide}}<hr id="answer">{{Answer}}"#);

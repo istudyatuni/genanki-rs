@@ -36,11 +36,14 @@ impl Deck {
     ///
     /// Example:
     ///
-    /// ```rust
+    /// ```
     /// use genanki_rs::{Deck, Note, basic_model};
     ///
+    /// # fn main() -> anyhow::Result<()> {
     /// let mut my_deck = Deck::new(1234, "Example deck", "This is an example deck");
     /// my_deck.add_note(Note::new(basic_model(), vec!["What is the capital of France?", "Paris"])?);
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn add_note(&mut self, note: Note) {
         self.notes.push(note);
@@ -122,23 +125,29 @@ impl Deck {
     /// Returns `Err` if the file can not be created.
     ///
     /// Example:
-    /// ```rust
+    /// ```
     /// use genanki_rs::{Deck, Note, basic_model};
     ///
+    /// # fn main() -> anyhow::Result<()> {
     /// let mut my_deck = Deck::new(1234, "Example deck", "This is an example deck");
     /// my_deck.add_note(Note::new(basic_model(), vec!["What is the capital of France?", "Paris"])?);
     ///
     /// my_deck.write_to_file("output.apkg")?;
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// This is equivalent to:
-    /// ```rust
+    /// ```
     /// use genanki_rs::{Deck, Note, basic_model, Package};
     ///
+    /// # fn main() -> anyhow::Result<()> {
     /// let mut my_deck = Deck::new(1234, "Example deck", "This is an example deck");
     /// my_deck.add_note(Note::new(basic_model(), vec!["What is the capital of France?", "Paris"])?);
     ///
     /// Package::new(vec![my_deck], vec![])?.write_to_file("output.apkg")?;
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn write_to_file(&self, file: &str) -> Result<(), Error> {
         Package::new(vec![self.clone()], vec![])?.write_to_file(file)?;

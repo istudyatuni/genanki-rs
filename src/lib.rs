@@ -8,16 +8,16 @@
 //! ```
 //! ## Minimal Example
 //! The following example creates a simple deck, containing 2 question-answer flashcards:
-//! ```rust
+//! ```
 //! use genanki_rs::{basic_model, Deck, Error, Note};
 //!
-//! fn main() -> Result<(), Error> {
-//!     let mut deck = Deck::new(1234, "Example Deck", "Example Deck containing 2 Flashcards");
-//!     deck.add_note(Note::new(basic_model(), vec!["What is the capital of France?", "Paris"])?);
-//!     deck.add_note(Note::new(basic_model(), vec!["What is the capital of Germany?", "Berlin"])?);
-//!     deck.write_to_file("output.apkg")?;
-//!     Ok(())
-//! }
+//! # fn main() -> Result<(), Error> {
+//! let mut deck = Deck::new(1234, "Example Deck", "Example Deck containing 2 Flashcards");
+//! deck.add_note(Note::new(basic_model(), vec!["What is the capital of France?", "Paris"])?);
+//! deck.add_note(Note::new(basic_model(), vec!["What is the capital of Germany?", "Berlin"])?);
+//! deck.write_to_file("output.apkg")?;
+//! # Ok(())
+//! # }
 //! ```
 //!
 //! ## Concepts
@@ -27,14 +27,14 @@
 //!
 //! Here's how you create a `Note`:
 //!
-//! ```rust,ignore
-//! use genanki_rs::{Note, Error};
+//! ```
+//! use genanki_rs::{basic_model, Note, Error};
 //!
-//! fn main() -> Result<(), Error> {
-//!     // let my_model = ...
-//!     let my_note = Note::new(my_model, vec!["Capital of Argentina", "Buenos Aires"])?;
-//!     Ok(())
-//! }
+//! # fn main() -> Result<(), Error> {
+//! let my_model = basic_model();
+//! let my_note = Note::new(my_model, vec!["Capital of Argentina", "Buenos Aires"])?;
+//! # Ok(())
+//! # }
 //! ```
 //!
 //! You pass in a `Model`, discussed below, and a set of `fields` (encoded as HTML).
@@ -42,7 +42,7 @@
 //! ### Models
 //! A `Model` defines the fields and cards for a type of `Note`. For example:
 //!
-//! ```rust
+//! ```
 //! use genanki_rs::{Field, Model, Template, Error};
 //!
 //! fn main() -> Result<(), Error> {
@@ -64,7 +64,7 @@
 //! back, separated by a `<hr>`. You can also pass custom `css` by calling
 //! [`Model::css`] to supply custom CSS.
 //!
-//! ```rust
+//! ```
 //! # use genanki_rs::{Field, Template, Model};
 //! let custom_css = ".card {\n font-family: arial;\n font-size: 20px;\n text-align: center;\n color: black;\n}\n";
 //! let my_model_with_css = Model::new(
@@ -83,28 +83,30 @@
 //! ### Generating a Deck/Package
 //! To import your notes into Anki, you need to add them to a `Deck`:
 //!
-//! ```rust,no_run
+//! ```
 //! use genanki_rs::{Deck, Error};
-//! # use genanki_rs::Note;
-//! # fn make_note() -> Note { todo!() }
+//! # use genanki_rs::{basic_model, Note};
+//! # fn make_note() -> Note {
+//! #     Note::new(basic_model(), vec!["What is the capital of France?", "Paris"]).unwrap()
+//! # }
 //!
-//! fn main() -> Result<(), Error> {
-//!     let my_note = make_note();
-//!     let mut my_deck = Deck::new(
-//!         2059400110,
-//!         "Country Capitals",
-//!         "Deck for studying country capitals",
-//!     );
-//!     my_deck.add_note(my_note);
-//!     Ok(())
-//! }
+//! # fn main() -> Result<(), Error> {
+//! let my_note = make_note();
+//! let mut my_deck = Deck::new(
+//!     2059400110,
+//!     "Country Capitals",
+//!     "Deck for studying country capitals",
+//! );
+//! my_deck.add_note(my_note);
+//! # Ok(())
+//! # }
 //! ```
 //!
 //! Once again, you need a unique deck `id`, a deck `name` and a deck `description`.
 //!
 //! Then, create a `Package` for your `Deck` and write it to a file:
 //!
-//! ```rust,ignore
+//! ```ignore
 //! my_deck.write_to_file("output.apkg")?;
 //! ```
 //!
@@ -113,7 +115,7 @@
 //! ### Media Files
 //! To add sounds or images, create a `Package` and pass the `decks` and `media_files` you want to include:
 //!
-//! ```rust,ignore
+//! ```ignore
 //! use genanki_rs::{Deck, Error, Package};
 //!
 //! fn main() -> Result<(), Error> {
@@ -127,7 +129,7 @@
 //!
 //! `media_files` should have the path (relative or absolute) to each file. To use them in notes, first add a field to your model, and reference that field in your template:
 //!
-//! ```rust
+//! ```
 //! # use genanki_rs::{Template, Field, Model};
 //! let my_model = Model::new(
 //!     1607392319,
@@ -145,7 +147,7 @@
 //!
 //! Then, set the `MyMedia` field on your `Note` to `[sound:sound.mp3]` for audio and `<img src="image.jpg">` for images (e.g):
 //!
-//! ```rust
+//! ```
 //! # use genanki_rs::{Field, Template, Model, Error, Note};
 //! # fn main() -> Result<(), Error> {
 //! # let my_model = Model::new(
@@ -730,9 +732,8 @@ def check_media(col):
             let note = Note::new(model(), vec!["a", "b"]).unwrap();
             deck.add_note(note);
             setup.import_package(Package::new(vec![deck], vec![]).unwrap(), None);
-            assert!(
-                setup.check_col("col.get_note(col.find_notes('')[0]).cards()[0].id > 1577836800000")
-            )
+            assert!(setup
+                .check_col("col.get_note(col.find_notes('')[0]).cards()[0].id > 1577836800000"))
         });
     }
 

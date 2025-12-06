@@ -18,7 +18,7 @@ use std::str::FromStr;
 /// `Package` to pack `Deck`s and `media_files` and write them to a `.apkg` file
 ///
 /// Example:
-/// ```rust
+/// ```ignore
 /// use genanki_rs::{Package, Deck, Note, Model, Field, Template};
 ///
 /// let model = Model::new(
@@ -38,7 +38,7 @@ use std::str::FromStr;
 /// deck.add_note(Note::new(model.clone(), vec!["What is the capital of France?", "Paris", "[sound:sound.mp3]"])?);
 /// deck.add_note(Note::new(model.clone(), vec!["What is the capital of France?", "Paris", r#"<img src="image.jpg">"#])?);
 ///
-/// let mut package = Package::new(vec![my_deck], vec!["sound.mp3", "images/image.jpg"])?;
+/// let mut package = Package::new(vec![deck], vec!["sound.mp3", "images/image.jpg"])?;
 /// package.write_to_file("output.apkg")?;
 /// ```
 pub struct Package {

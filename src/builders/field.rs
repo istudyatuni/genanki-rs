@@ -6,7 +6,7 @@ use crate::db_entries::Fld;
 ///
 /// Example:
 ///
-/// ```rust
+/// ```
 /// use genanki_rs::Field;
 ///
 /// let field1 = Field::new("field1");
