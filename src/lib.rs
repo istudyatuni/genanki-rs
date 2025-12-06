@@ -207,14 +207,26 @@ pub use package::Package;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use pyo3::types::PyDict;
+    use pyo3::types::{PyAnyMethods, PyDict};
+    use pyo3::Bound;
     use pyo3::{
         types::{PyModule, PyString},
         PyAny, Python,
     };
     use serial_test::serial;
+    use std::ffi::CString;
     use std::io::Write;
     use tempfile::{NamedTempFile, TempDir, TempPath};
+
+    trait AsCString {
+        fn as_cstring(self) -> CString;
+    }
+
+    impl AsCString for &str {
+        fn as_cstring(self) -> CString {
+            CString::new(self).unwrap()
+        }
+    }
 
     fn model() -> Model {
         Model::new(
@@ -321,7 +333,7 @@ mod tests {
         \x01\x01\x11\x00\xff\xcc\x00\x06\x00\x10\x10\x05\xff\xda\x00\x08\x01\x01\
         \x00\x00?\x00\xd2\xcf \xff\xd9";
 
-    pub fn anki_collection<'a>(py: &'a Python, col_fname: &str) -> &'a PyAny {
+    pub fn anki_collection<'a>(py: &'a Python, col_fname: &str) -> Bound<'a, PyAny> {
         let code = r#"
 import anki.collection
 import tempfile
@@ -331,18 +343,23 @@ def setup(fname):
     colf_name = f"{fname}.anki2"
     return anki.collection.Collection(colf_name)
 "#;
-        let setup = PyModule::from_code(*py, code, "test_setup", "test_setup.py")
-            .unwrap()
-            .to_owned();
+        let setup = PyModule::from_code(
+            *py,
+            code.as_cstring().as_c_str(),
+            "test_setup".as_cstring().as_c_str(),
+            "test_setup.py".as_cstring().as_c_str(),
+        )
+        .unwrap()
+        .to_owned();
         let col = setup
-            .call1("setup", (PyString::new(*py, col_fname),))
+            .call_method1("setup", (PyString::new(*py, col_fname),))
             .unwrap();
         col
     }
 
     struct TestSetup<'a> {
         py: &'a Python<'a>,
-        col: &'a PyAny,
+        col: Bound<'a, PyAny>,
         col_fname: String,
         tmp_files: Vec<TempPath>,
         _tmp_dirs: Vec<TempDir>,
@@ -361,13 +378,18 @@ def cleanup(fname, col):
     os.remove(path)
     shutil.rmtree(media)
                 "#;
-            let cleanup = PyModule::from_code(*self.py, code, "test_cleanup", "test_cleanup.py")
-                .unwrap()
-                .to_owned();
+            let cleanup = PyModule::from_code(
+                *self.py,
+                code.as_cstring().as_c_str(),
+                "test_cleanup".as_cstring().as_c_str(),
+                "test_cleanup.py".as_cstring().as_c_str(),
+            )
+            .unwrap()
+            .to_owned();
             cleanup
-                .call(
+                .call_method(
                     "cleanup",
-                    (PyString::new(*self.py, &self.col_fname), self.col),
+                    (PyString::new(*self.py, &self.col_fname), self.col()),
                     None,
                 )
                 .unwrap();
@@ -409,7 +431,7 @@ def cleanup(fname, col):
                 package.write_to_file(out_file.to_str().unwrap()).unwrap();
             }
             let locals = PyDict::new(*self.py);
-            let anki_col = self.col;
+            let anki_col = self.col();
             locals.set_item("col", anki_col).unwrap();
             locals
                 .set_item(
@@ -424,7 +446,9 @@ importer = anki.importing.apkg.AnkiPackageImporter(col, outfile)
 importer.run()
 res = col
         "#;
-            self.py.run(code, None, Some(locals)).unwrap();
+            self.py
+                .run(code.as_cstring().as_c_str(), None, Some(&locals))
+                .unwrap();
             let col = locals.get_item("res").unwrap();
             self.col = col;
         }
@@ -437,10 +461,15 @@ def assertion(col):
         "#,
                 condition_str
             );
-            let assertion =
-                PyModule::from_code(*self.py, &code, "assertion", "assertion.py").unwrap();
+            let assertion = PyModule::from_code(
+                *self.py,
+                code.as_cstring().as_c_str(),
+                "assertion".as_cstring().as_c_str(),
+                "assertion.py".as_cstring().as_c_str(),
+            )
+            .unwrap();
             assertion
-                .call1("assertion", (self.col,))
+                .call_method1("assertion", (self.col(),))
                 .unwrap()
                 .extract()
                 .unwrap()
@@ -458,33 +487,38 @@ def check_media(col):
     os.chdir(orig_cwd)
     return res.missing, res.report, res.unused
             "#;
-            let check = PyModule::from_code(*self.py, code, "check_media", "check_media.py")
-                .unwrap()
-                .to_owned();
+            let check = PyModule::from_code(
+                *self.py,
+                code.as_cstring().as_c_str(),
+                "check_media".as_cstring().as_c_str(),
+                "check_media.py".as_cstring().as_c_str(),
+            )
+            .unwrap()
+            .to_owned();
             check
-                .call1("check_media", (self.col,))
+                .call_method1("check_media", (self.col(),))
                 .unwrap()
                 .extract()
                 .unwrap()
         }
 
-        fn col(&self) -> &PyAny {
-            self.col
+        fn col(&self) -> &Bound<'_, PyAny> {
+            &self.col
         }
     }
 
     #[test]
     #[serial]
     fn import_anki() {
-        let gil = Python::acquire_gil();
-        let py = gil.python();
-        py.import("anki").unwrap();
+        Python::attach(|gil| {
+            gil.import("anki").unwrap();
+        });
     }
 
     #[test]
     #[serial]
     fn generated_deck_can_be_imported() {
-        Python::with_gil(|py| {
+        Python::attach(|py| {
             let mut setup = TestSetup::new(&py);
             let mut deck = Deck::new(123456, "foodeck", "");
             deck.add_note(Note::new(model(), vec!["a", "b"]).unwrap());
@@ -498,7 +532,7 @@ def check_media(col):
     #[test]
     #[serial]
     fn generated_deck_has_valid_cards() {
-        Python::with_gil(|py| {
+        Python::attach(|py| {
             let mut setup = TestSetup::new(&py);
             let mut deck = Deck::new(123456, "foodeck", "");
             deck.add_note(Note::new(cn_model(), vec!["a", "b", "c"]).unwrap());
@@ -512,7 +546,7 @@ def check_media(col):
     #[test]
     #[serial]
     fn multi_deck_package() {
-        Python::with_gil(|py| {
+        Python::attach(|py| {
             let mut setup = TestSetup::new(&py);
             let mut deck1 = Deck::new(123456, "foodeck", "");
             let mut deck2 = Deck::new(654321, "bardeck", "");
@@ -604,7 +638,7 @@ def check_media(col):
             .unwrap()
             .write(VALID_JPG)
             .unwrap();
-        Python::with_gil(|py| {
+        Python::attach(|py| {
             let mut setup = TestSetup::new(&py);
             setup.import_package(
                 Package::new(vec![deck], vec!["present.mp3", "present.jpg"]).unwrap(),
@@ -647,7 +681,7 @@ def check_media(col):
             .unwrap()
             .write(VALID_JPG)
             .unwrap();
-        Python::with_gil(|py| {
+        Python::attach(|py| {
             let mut setup = TestSetup::new(&py);
             setup.import_package(
                 Package::new(
@@ -670,7 +704,7 @@ def check_media(col):
     #[test]
     #[serial]
     fn deck_with_description() {
-        Python::with_gil(|py| {
+        Python::attach(|py| {
             let mut setup = TestSetup::new(&py);
             let mut deck = Deck::new(112233, "foodeck", "Very nice deck");
             let note = Note::new(model(), vec!["a", "b"]).unwrap();
@@ -684,7 +718,7 @@ def check_media(col):
     #[test]
     #[serial]
     fn card_added_date_is_recent() {
-        Python::with_gil(|py| {
+        Python::attach(|py| {
             let mut setup = TestSetup::new(&py);
             let mut deck = Deck::new(1104693946, "foodeck", "");
             let note = Note::new(model(), vec!["a", "b"]).unwrap();
@@ -699,7 +733,7 @@ def check_media(col):
     #[test]
     #[serial]
     fn model_with_latex_pre_and_post() {
-        Python::with_gil(|py| {
+        Python::attach(|py| {
             let mut setup = TestSetup::new(&py);
             let mut deck = Deck::new(69696969696, "foodeck", "");
             let note = Note::new(model_with_latex(), vec!["a", "b"]).unwrap();
@@ -711,12 +745,17 @@ def latex(col, key):
     anki_note = col.getNote(col.find_notes('')[0])
     return anki_note.model()[key]
                 "#;
-            let assertion = PyModule::from_code(py, code, "latex", "latex.py")
-                .unwrap()
-                .to_owned();
+            let assertion = PyModule::from_code(
+                py,
+                code.as_cstring().as_c_str(),
+                "latex".as_cstring().as_c_str(),
+                "latex.py".as_cstring().as_c_str(),
+            )
+            .unwrap()
+            .to_owned();
             assert_eq!(
                 assertion
-                    .call("latex", (col, PyString::new(py, "latexPre"),), None,)
+                    .call_method("latex", (col, PyString::new(py, "latexPre"),), None,)
                     .unwrap()
                     .extract::<String>()
                     .unwrap(),
@@ -724,7 +763,7 @@ def latex(col, key):
             );
             assert_eq!(
                 assertion
-                    .call("latex", (col, PyString::new(py, "latexPost"),), None,)
+                    .call_method("latex", (col, PyString::new(py, "latexPost"),), None,)
                     .unwrap()
                     .extract::<String>()
                     .unwrap(),
@@ -736,7 +775,7 @@ def latex(col, key):
     #[test]
     #[serial]
     fn test_model_with_sort_field_index() {
-        Python::with_gil(|py| {
+        Python::attach(|py| {
             let mut setup = TestSetup::new(&py);
             let mut deck = Deck::new(1104693946, "foodeck", "");
             let note = Note::new(model_with_sort_field_index(), vec!["a", "b"]).unwrap();
